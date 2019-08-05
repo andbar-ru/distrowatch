@@ -240,27 +240,44 @@ func downloadScreenshot(distrURL string) string {
 }
 
 func main() {
-	// Create directories if they are not exist
+	// Create directory if it doesn't exist.
 	_, err := os.Stat(distrsDir)
 	if os.IsNotExist(err) {
-		err = os.Mkdir(distrsDir, 0755)
+		err = os.MkdirAll(distrsDir, 0755)
 		check(err)
 	}
 
-	// Check database existance
-	if _, err := os.Stat(database); os.IsNotExist(err) {
-		check(err)
-	}
-
-	// Open database
+	// Open database and create tables if they don't exist.
 	db, err := sql.Open("sqlite3", database)
 	check(err)
 	defer db.Close()
+	var answer string
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='distrs'").Scan(&answer)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			_, err = db.Exec("CREATE TABLE 'distrs' (`name` TEXT NOT NULL UNIQUE, `count` INTEGER NOT NULL, `last_update` INTEGER NOT NULL, PRIMARY KEY(`name`))")
+			check(err)
+		} else {
+			log.Fatal(err)
+		}
+	}
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='coords'").Scan(&answer)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			_, err = db.Exec("CREATE TABLE 'coords' (`date` INTEGER NOT NULL UNIQUE, `longitude_diff` FLOAT, `longitude_trend` INTEGER, `latitude_diff` FLOAT, `latitude_trend` INTEGER, `latitude` FLOAT NOT NULL, `longitude` FLOAT NOT NULL, PRIMARY KEY(`date`))")
+			check(err)
+		} else {
+			log.Fatal(err)
+		}
+	}
+	_ = answer
 
 	// If date of last_update is today, exit.
 	var lastUpdate string
 	err = db.QueryRow("SELECT last_update FROM distrs ORDER BY last_update DESC LIMIT 1").Scan(&lastUpdate)
-	check(err)
+	if err != nil && err != sql.ErrNoRows {
+		log.Fatal(err)
+	}
 	if lastUpdate == todayYYMMDD {
 		fmt.Println("Database is already updated today.")
 		os.Exit(0)
