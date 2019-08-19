@@ -11,10 +11,10 @@ type Coords struct {
 }
 
 // GetCoords returns current coordinates from database.
-func GetCoords() ([]Coords, error) {
+func GetCoords() (Coords, error) {
 	var db, err = getDB()
 	if err != nil {
-		return nil, err
+		return Coords{}, err
 	}
 	defer db.Close()
 
@@ -30,7 +30,7 @@ func GetCoords() ([]Coords, error) {
 			longitude = 30.0
 			longitudeDelta = 0.0
 		} else {
-			return nil, err
+			return Coords{}, err
 		}
 	} else {
 		latitudeDelta = latitudeDiff * float64(latitudeTrend)

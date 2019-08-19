@@ -24,8 +24,6 @@ func GetDistrs() ([]Distr, error) {
 	defer rows.Close()
 
 	// Collect distrs.
-	var nameFieldSize, countFieldSize, newestLastUpdate, oldestLastUpdate int
-	oldestLastUpdate = 1e8 // certainly greater than any date
 	distrs := []Distr{}
 	for rows.Next() {
 		var d Distr

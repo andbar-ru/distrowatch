@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	database = path.Join(os.Getenv("HOME", "Images/distrs/db.sqlite3"))
+	database = path.Join(os.Getenv("HOME"), "Images/distrs/db.sqlite3")
 )
 
 func getDB() (*sql.DB, error) {
