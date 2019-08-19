@@ -11,8 +11,8 @@ type Coords struct {
 }
 
 // GetCoords returns current coordinates from database.
-func GetCoords() (Coords, error) {
-	var db, err = getDB()
+func GetCoords(database string) (Coords, error) {
+	var db, err = getDB(database)
 	if err != nil {
 		return Coords{}, err
 	}

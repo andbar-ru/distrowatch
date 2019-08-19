@@ -8,8 +8,8 @@ type Distr struct {
 }
 
 // GetDistrs returns distribution list from database.
-func GetDistrs() ([]Distr, error) {
-	var db, err = getDB()
+func GetDistrs(database string) ([]Distr, error) {
+	var db, err = getDB(database)
 	if err != nil {
 		return nil, err
 	}
