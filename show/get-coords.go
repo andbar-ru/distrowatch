@@ -4,10 +4,10 @@ import "database/sql"
 
 // Coords desribes the current point and vector from the previous point.
 type Coords struct {
-	latitude       float64
-	longitude      float64
-	latitudeDelta  float64
-	longitudeDelta float64
+	Latitude       float64
+	Longitude      float64
+	LatitudeDelta  float64
+	LongitudeDelta float64
 }
 
 // GetCoords returns current coordinates from database.

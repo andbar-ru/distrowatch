@@ -2,9 +2,9 @@ package show
 
 // Distr describes one distribution.
 type Distr struct {
-	name       string
-	count      int
-	lastUpdate int
+	Name       string
+	Count      int
+	LastUpdate int
 }
 
 // GetDistrs returns distribution list from database.
@@ -27,7 +27,7 @@ func GetDistrs(database string) ([]Distr, error) {
 	distrs := []Distr{}
 	for rows.Next() {
 		var d Distr
-		err := rows.Scan(&d.name, &d.count, &d.lastUpdate)
+		err := rows.Scan(&d.Name, &d.Count, &d.LastUpdate)
 		if err != nil {
 			return nil, err
 		}
