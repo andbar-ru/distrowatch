@@ -25,17 +25,9 @@ type Distr struct {
 	LastUpdateStr string
 }
 
-// Data is the data for the template.
-type Data struct {
-	Coords string
-	Distrs []*Distr
-}
-
 func index(writer http.ResponseWriter, request *http.Request) {
 	coords, err := show.GetCoords()
 	check(err)
-	data := Data{}
-	data.Coords = fmt.Sprintf("Coordinates: %.4f (%+.4f), %.4f (%+.4f)", coords.Latitude, coords.LatitudeDelta, coords.Longitude, coords.LongitudeDelta)
 
 	distrs, err := show.GetDistrs()
 	check(err)
@@ -79,11 +71,19 @@ func index(writer http.ResponseWriter, request *http.Request) {
 			distr.Leader = true
 		}
 	}
-	data.Distrs = tmplDistrs
 
 	t := template.Must(template.New("index").ParseFiles("index.html"))
 
-	err = t.Execute(writer, data)
+	type data struct {
+		Coords string
+		Distrs []*Distr
+	}
+	dataI := &data{
+		Coords: fmt.Sprintf("Coordinates: %.4f (%+.4f), %.4f (%+.4f)", coords.Latitude, coords.LatitudeDelta, coords.Longitude, coords.LongitudeDelta),
+		Distrs: tmplDistrs,
+	}
+
+	err = t.Execute(writer, dataI)
 	check(err)
 }
 
