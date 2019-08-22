@@ -75,11 +75,11 @@ func index(writer http.ResponseWriter, request *http.Request) {
 	t := template.Must(template.New("index").ParseFiles("index.html"))
 
 	type data struct {
-		Coords string
+		Coords *show.Coords
 		Distrs []*Distr
 	}
 	dataI := &data{
-		Coords: fmt.Sprintf("Coordinates: %.4f (%+.4f), %.4f (%+.4f)", coords.Latitude, coords.LatitudeDelta, coords.Longitude, coords.LongitudeDelta),
+		Coords: coords,
 		Distrs: tmplDistrs,
 	}
 

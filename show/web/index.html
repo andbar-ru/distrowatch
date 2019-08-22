@@ -26,7 +26,7 @@ td:nth-child(2) {
 }
 
 .leader td {
-  background-color: #ffffaa
+  background-color: #ffffaa;
 }
 
 .count {
@@ -37,7 +37,7 @@ td:nth-child(2) {
 </head>
 
 <body>
-<p>{{ .Coords }}</p>
+<p>Coordinates: {{ printf "%.4f (%+.4f), %.4f (%+.4f)" .Coords.Latitude .Coords.LatitudeDelta .Coords.Longitude .Coords.LongitudeDelta }}</p>
 
 <table>
   <thead>
