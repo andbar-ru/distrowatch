@@ -1,0 +1,69 @@
+{{ define "index" }}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="utf-8">
+<title>Distrs</title>
+
+<style>
+table {
+  border-collapse: collapse;
+}
+
+td, th {
+  border: 1px solid grey;
+  padding: 2px 5px;
+}
+
+td {
+  text-align: right;
+}
+
+td:nth-child(2) {
+  text-align: left;
+}
+
+.leader td {
+  background-color: #ffffaa
+}
+
+.count {
+  text-align: right;
+}
+</style>
+
+</head>
+
+<body>
+<p>{{ .Coords }}</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Name</th>
+      <th>Count</th>
+      <th>Last Update</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {{ range .Distrs }}
+      <tr{{ if .Leader }} class="leader"{{ end }}>
+        <td>{{ .Number }}</td>
+        <td>{{ .Name }}</td>
+        <td>{{ .Count }}</td>
+        <td>{{ .LastUpdateStr }}</td>
+        <td>{{ if .Newest }}newest{{ else if .Oldest }}oldest{{ end }}</td>
+      </tr>
+    {{ end }}
+  </tbody>
+</table>
+</body>
+
+</html>
+
+{{ end }}
+
