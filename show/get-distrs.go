@@ -8,8 +8,8 @@ type Distr struct {
 }
 
 // GetDistrs returns distribution list from database.
-func GetDistrs(database string) ([]Distr, error) {
-	var db, err = getDB(database)
+func GetDistrs() ([]*Distr, error) {
+	var db, err = getDB()
 	if err != nil {
 		return nil, err
 	}
@@ -24,9 +24,9 @@ func GetDistrs(database string) ([]Distr, error) {
 	defer rows.Close()
 
 	// Collect distrs.
-	distrs := []Distr{}
+	distrs := make([]*Distr, 0)
 	for rows.Next() {
-		var d Distr
+		d := new(Distr)
 		err := rows.Scan(&d.Name, &d.Count, &d.LastUpdate)
 		if err != nil {
 			return nil, err

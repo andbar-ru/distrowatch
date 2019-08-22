@@ -3,14 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
-	"os"
-	"path"
 
 	"github.com/andbar-ru/distrowatch/show"
-)
-
-var (
-	database = path.Join(os.Getenv("HOME"), "Images/distrs/db.sqlite3")
 )
 
 func check(err error) {
@@ -21,13 +15,13 @@ func check(err error) {
 
 func main() {
 	// Print coordinates in one line.
-	coords, err := show.GetCoords(database)
+	coords, err := show.GetCoords()
 	check(err)
 	fmt.Printf("Coordinates: %.4f (%+.4f) %.4f (%+.4f)\n\n",
 		coords.Latitude, coords.LatitudeDelta, coords.Longitude, coords.LongitudeDelta)
 
 	// Print distr stats in a table.
-	distrs, err := show.GetDistrs(database)
+	distrs, err := show.GetDistrs()
 	check(err)
 	// Figure out table parameters.
 	var nameFieldSize, countFieldSize int
