@@ -165,6 +165,15 @@ func updateDb(db *sql.DB, outcome Outcome) {
 	_, err = tx.Exec("UPDATE distrs SET count = count + 1, last_update = ? WHERE name = ?", todayYYMMDD, outcome.distrName)
 	check(err)
 
+	// Move distrs that have been updated over year ago to the table `dropout`.
+	todayYYMMDDint, err := strconv.Atoi(todayYYMMDD)
+	check(err)
+	yearAgoYYMMDDint := todayYYMMDDint - 10000
+	_, err = tx.Exec("INSERT INTO dropout (name, count, last_update, drop_date) SELECT name, count, last_update, CAST(strftime('%Y%m%d', 'now') AS int) FROM distrs WHERE last_update < ?", yearAgoYYMMDDint)
+	check(err)
+	_, err = tx.Exec("DELETE FROM distrs WHERE last_update < ?", yearAgoYYMMDDint)
+	check(err)
+
 	var latitude, longitude float64
 	err = db.QueryRow("SELECT latitude, longitude FROM coords ORDER BY date DESC LIMIT 1").Scan(&latitude, &longitude)
 	if err != nil {
@@ -255,7 +264,7 @@ func main() {
 	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='distrs'").Scan(&answer)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			_, err = db.Exec("CREATE TABLE 'distrs' (`name` TEXT NOT NULL UNIQUE, `count` INTEGER NOT NULL, `last_update` INTEGER NOT NULL, PRIMARY KEY(`name`))")
+			_, err = db.Exec("CREATE TABLE 'distrs' (`name` TEXT NOT NULL UNIQUE, `count` INTEGER NOT NULL, `last_update` INTEGER NOT NULL UNIQUE, PRIMARY KEY(`name`))")
 			check(err)
 		} else {
 			log.Fatal(err)
@@ -265,6 +274,15 @@ func main() {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			_, err = db.Exec("CREATE TABLE 'coords' (`date` INTEGER NOT NULL UNIQUE, `longitude_diff` FLOAT, `longitude_trend` INTEGER, `latitude_diff` FLOAT, `latitude_trend` INTEGER, `latitude` FLOAT NOT NULL, `longitude` FLOAT NOT NULL, PRIMARY KEY(`date`))")
+			check(err)
+		} else {
+			log.Fatal(err)
+		}
+	}
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='dropout'").Scan(&answer)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			_, err = db.Exec("CREATE TABLE 'dropout' (`name` TEXT NOT NULL, `count` INTEGER NOT NULL, `last_update` INTEGER NOT NULL UNIQUE, `drop_date` INTEGER NOT NULL, PRIMARY KEY(`last_update`))")
 			check(err)
 		} else {
 			log.Fatal(err)
