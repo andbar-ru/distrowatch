@@ -39,6 +39,8 @@ td:nth-child(2) {
 <body>
 <p>Coordinates: {{ printf "%.4f (%+.4f), %.4f (%+.4f)" .Coords.Latitude .Coords.LatitudeDelta .Coords.Longitude .Coords.LongitudeDelta }}</p>
 
+<p>Average color of the last image: {{ .AverageColor }}</p>
+
 <table>
   <thead>
     <tr>

@@ -29,6 +29,15 @@ func index(writer http.ResponseWriter, request *http.Request) {
 	coords, err := show.GetCoords()
 	check(err)
 
+	averageColor, err := show.GetLastDistrImageAverageColor()
+	check(err)
+	var averageColorStr string
+	if averageColor.A == 0xff {
+		averageColorStr = fmt.Sprintf("#%02x%02x%02x", averageColor.R, averageColor.G, averageColor.B)
+	} else {
+		averageColorStr = fmt.Sprintf("#%02x%02x%02x%02x", averageColor.R, averageColor.G, averageColor.B, averageColor.A)
+	}
+
 	distrs, err := show.GetDistrs()
 	check(err)
 	tmplDistrs := make([]*Distr, 0, len(distrs))
@@ -75,12 +84,14 @@ func index(writer http.ResponseWriter, request *http.Request) {
 	t := template.Must(template.New("index").ParseFiles("index.html"))
 
 	type data struct {
-		Coords *show.Coords
-		Distrs []*Distr
+		Coords       *show.Coords
+		AverageColor string
+		Distrs       []*Distr
 	}
 	dataI := &data{
-		Coords: coords,
-		Distrs: tmplDistrs,
+		Coords:       coords,
+		AverageColor: averageColorStr,
+		Distrs:       tmplDistrs,
 	}
 
 	err = t.Execute(writer, dataI)
