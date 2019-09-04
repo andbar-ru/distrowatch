@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/andbar-ru/distrowatch"
 )
 
 const (
@@ -29,8 +29,6 @@ var (
 	now         = time.Now()
 	today       = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	todayYYMMDD = today.Format(timeLayout)
-	distrsDir   = path.Join(os.Getenv("HOME"), "Images/distrs")
-	database    = path.Join(distrsDir, "db.sqlite3")
 	client      = &http.Client{}
 	distrCount  = 100
 )
@@ -227,7 +225,7 @@ func downloadScreenshot(distrURL string) string {
 		url = baseURL + url
 	}
 	base := path.Base(url)
-	screenshotPath := path.Join(distrsDir, base)
+	screenshotPath := path.Join(distrowatch.DistrsDir, base)
 
 	// Download screenshot
 	output, err := os.Create(screenshotPath)
@@ -250,14 +248,14 @@ func downloadScreenshot(distrURL string) string {
 
 func main() {
 	// Create directory if it doesn't exist.
-	_, err := os.Stat(distrsDir)
+	_, err := os.Stat(distrowatch.DistrsDir)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(distrsDir, 0755)
+		err = os.MkdirAll(distrowatch.DistrsDir, 0755)
 		check(err)
 	}
 
 	// Open database and create tables if they don't exist.
-	db, err := sql.Open("sqlite3", database)
+	db, err := distrowatch.GetDB()
 	check(err)
 	defer db.Close()
 	var answer string

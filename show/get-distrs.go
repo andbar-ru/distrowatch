@@ -1,5 +1,9 @@
 package show
 
+import (
+	"github.com/andbar-ru/distrowatch"
+)
+
 // Distr describes one distribution.
 type Distr struct {
 	Name       string
@@ -9,7 +13,7 @@ type Distr struct {
 
 // GetDistrs returns distribution list from database.
 func GetDistrs() ([]*Distr, error) {
-	var db, err = getDB()
+	var db, err = distrowatch.GetDB()
 	if err != nil {
 		return nil, err
 	}

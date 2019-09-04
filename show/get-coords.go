@@ -1,6 +1,10 @@
 package show
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/andbar-ru/distrowatch"
+)
 
 // Coords desribes the current point and vector from the previous point.
 type Coords struct {
@@ -12,7 +16,7 @@ type Coords struct {
 
 // GetCoords returns current coordinates from database.
 func GetCoords() (*Coords, error) {
-	var db, err = getDB()
+	var db, err = distrowatch.GetDB()
 	if err != nil {
 		return &Coords{}, err
 	}
