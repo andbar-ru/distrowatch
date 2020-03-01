@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/andbar-ru/distrowatch"
 )
 
 const (
@@ -29,8 +29,6 @@ var (
 	now         = time.Now()
 	today       = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	todayYYMMDD = today.Format(timeLayout)
-	distrsDir   = path.Join(os.Getenv("HOME"), "Images/distrs")
-	database    = path.Join(distrsDir, "db.sqlite3")
 	client      = &http.Client{}
 	distrCount  = 100
 )
@@ -165,6 +163,15 @@ func updateDb(db *sql.DB, outcome Outcome) {
 	_, err = tx.Exec("UPDATE distrs SET count = count + 1, last_update = ? WHERE name = ?", todayYYMMDD, outcome.distrName)
 	check(err)
 
+	// Move distrs that have been updated over year ago to the table `dropout`.
+	todayYYMMDDint, err := strconv.Atoi(todayYYMMDD)
+	check(err)
+	yearAgoYYMMDDint := todayYYMMDDint - 10000
+	_, err = tx.Exec("INSERT INTO dropout (name, count, last_update, drop_date) SELECT name, count, last_update, CAST(strftime('%Y%m%d', 'now') AS int) FROM distrs WHERE last_update < ?", yearAgoYYMMDDint)
+	check(err)
+	_, err = tx.Exec("DELETE FROM distrs WHERE last_update < ?", yearAgoYYMMDDint)
+	check(err)
+
 	var latitude, longitude float64
 	err = db.QueryRow("SELECT latitude, longitude FROM coords ORDER BY date DESC LIMIT 1").Scan(&latitude, &longitude)
 	if err != nil {
@@ -218,7 +225,7 @@ func downloadScreenshot(distrURL string) string {
 		url = baseURL + url
 	}
 	base := path.Base(url)
-	screenshotPath := path.Join(distrsDir, base)
+	screenshotPath := path.Join(distrowatch.DistrsDir, base)
 
 	// Download screenshot
 	output, err := os.Create(screenshotPath)
@@ -241,21 +248,21 @@ func downloadScreenshot(distrURL string) string {
 
 func main() {
 	// Create directory if it doesn't exist.
-	_, err := os.Stat(distrsDir)
+	_, err := os.Stat(distrowatch.DistrsDir)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(distrsDir, 0755)
+		err = os.MkdirAll(distrowatch.DistrsDir, 0755)
 		check(err)
 	}
 
 	// Open database and create tables if they don't exist.
-	db, err := sql.Open("sqlite3", database)
+	db, err := distrowatch.GetDB()
 	check(err)
 	defer db.Close()
 	var answer string
 	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='distrs'").Scan(&answer)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			_, err = db.Exec("CREATE TABLE 'distrs' (`name` TEXT NOT NULL UNIQUE, `count` INTEGER NOT NULL, `last_update` INTEGER NOT NULL, PRIMARY KEY(`name`))")
+			_, err = db.Exec("CREATE TABLE 'distrs' (`name` TEXT NOT NULL UNIQUE, `count` INTEGER NOT NULL, `last_update` INTEGER NOT NULL UNIQUE, PRIMARY KEY(`name`))")
 			check(err)
 		} else {
 			log.Fatal(err)
@@ -265,6 +272,15 @@ func main() {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			_, err = db.Exec("CREATE TABLE 'coords' (`date` INTEGER NOT NULL UNIQUE, `longitude_diff` FLOAT, `longitude_trend` INTEGER, `latitude_diff` FLOAT, `latitude_trend` INTEGER, `latitude` FLOAT NOT NULL, `longitude` FLOAT NOT NULL, PRIMARY KEY(`date`))")
+			check(err)
+		} else {
+			log.Fatal(err)
+		}
+	}
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='dropout'").Scan(&answer)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			_, err = db.Exec("CREATE TABLE 'dropout' (`name` TEXT NOT NULL, `count` INTEGER NOT NULL, `last_update` INTEGER NOT NULL UNIQUE, `drop_date` INTEGER NOT NULL, PRIMARY KEY(`last_update`))")
 			check(err)
 		} else {
 			log.Fatal(err)
