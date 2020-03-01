@@ -10,7 +10,11 @@ import (
 
 func checkErr(err error) {
 	if err != nil {
-		log.Panic(err)
+		if logger == nil {
+			log.Panic(err)
+		} else {
+			logger.Panic(err)
+		}
 	}
 }
 

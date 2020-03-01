@@ -123,24 +123,6 @@ func (l *Logger) Critical(msg string, args ...interface{}) {
 	l.printLevel(msg, CRITICAL, args...)
 }
 
-// Print resets prefix and calls log.Print.
-func (l *Logger) Print(v ...interface{}) {
-	l.SetPrefix("")
-	l.Logger.Print(v...)
-}
-
-// Println resets prefix and calls log.Println.
-func (l *Logger) Println(v ...interface{}) {
-	l.SetPrefix("")
-	l.Logger.Println(v...)
-}
-
-// Printf resets prefix and calls log.Printf.
-func (l *Logger) Printf(format string, v ...interface{}) {
-	l.SetPrefix("")
-	l.Logger.Printf(format, v...)
-}
-
 // Fatal sets prefix and calls log.Fatal.
 func (l *Logger) Fatal(v ...interface{}) {
 	l.SetPrefix(levelToPrefix[FATAL])
@@ -157,4 +139,31 @@ func (l *Logger) Fatalln(v ...interface{}) {
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	l.SetPrefix(levelToPrefix[FATAL])
 	l.Logger.Fatalf(format, v...)
+}
+
+// Print merely prints without prefix and flags.
+func (l *Logger) Print(v ...interface{}) {
+	l.SetPrefix("")
+	flags := l.Flags()
+	l.SetFlags(0)
+	l.Logger.Print(v...)
+	l.SetFlags(flags)
+}
+
+// Println merely prints without prefix and flags.
+func (l *Logger) Println(v ...interface{}) {
+	l.SetPrefix("")
+	flags := l.Flags()
+	l.SetFlags(0)
+	l.Logger.Println(v...)
+	l.SetFlags(flags)
+}
+
+// Printf merely prints without prefix and flags.
+func (l *Logger) Printf(format string, v ...interface{}) {
+	l.SetPrefix("")
+	flags := l.Flags()
+	l.SetFlags(0)
+	l.Logger.Printf(format, v...)
+	l.SetFlags(flags)
 }

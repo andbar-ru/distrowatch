@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"net/http"
+)
+
 var (
 	logger *Logger
 	config *Config
@@ -8,12 +13,8 @@ var (
 func main() {
 	config = GetConfig()
 	logger = NewLogger(config.LogConfig)
-	logger.Debug("Debug message")
-	logger.Info("Info message")
-	logger.Warning("Warning message")
-	logger.Error("Error message")
-	logger.Critical("Critical message")
-	logger.Print("Print message")
-	logger.Printf("Printf message: %s", "Yopta")
-	logger.Fatalf("Fatal message: %s", "Nah")
+	router := NewRouter()
+	hostPort := fmt.Sprintf("localhost:%d", config.Port)
+	logger.Printf("Starting service on %s\n", hostPort)
+	logger.Fatal(http.ListenAndServe(hostPort, router))
 }
