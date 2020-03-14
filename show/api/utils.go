@@ -1,11 +1,16 @@
 package main
 
 import (
+	"io"
 	"log"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
+	// Register sqlite3.
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func checkErr(err error) {
@@ -18,8 +23,8 @@ func checkErr(err error) {
 	}
 }
 
-func closeFile(f *os.File) {
-	err := f.Close()
+func closeCheck(c io.Closer) {
+	err := c.Close()
 	checkErr(err)
 }
 
@@ -35,4 +40,21 @@ func getPath(path string) string {
 		checkErr(err)
 		return filepath.Join(filepath.Dir(execPath), path)
 	}
+}
+
+// getDB opens and returns sqlite database specified in config.
+// Consumers have to close the database.
+func getDB() (*sqlx.DB, error) {
+	databasePath := getPath(config.DatabasePath)
+	// Check if database exists.
+	_, err := os.Stat(databasePath)
+	if err != nil {
+		return nil, err
+	}
+	// Open database.
+	db, err := sqlx.Connect("sqlite3", databasePath)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }

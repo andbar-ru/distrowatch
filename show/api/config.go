@@ -22,7 +22,7 @@ type LogConfig struct {
 func GetConfig() *Config {
 	file, err := os.Open("config.json")
 	checkErr(err)
-	defer closeFile(file)
+	defer closeCheck(file)
 
 	decoder := json.NewDecoder(file)
 	var config Config
