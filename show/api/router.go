@@ -10,9 +10,10 @@ import (
 // RequestLogger wraps handler and logs request and time it takes.
 func RequestLogger(handler http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rw := &MyResponseWriter{ResponseWriter: w}
 		start := time.Now()
-		handler.ServeHTTP(w, r)
-		logger.Info("%s %s %s", r.Method, r.RequestURI, time.Since(start))
+		handler.ServeHTTP(rw, r)
+		logger.Info("%s %s %d %s", r.Method, r.RequestURI, rw.StatusCode(), time.Since(start))
 	})
 }
 

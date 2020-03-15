@@ -8,7 +8,7 @@ import (
 )
 
 // respondJSON makes response with payload in json format.
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+func respondJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	response, err := json.Marshal(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -19,7 +19,7 @@ func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
+	w.WriteHeader(statusCode)
 	_, err = w.Write([]byte(response))
 	if err != nil {
 		logger.Panic(err)
@@ -27,8 +27,13 @@ func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 }
 
 // respondError makes error response with payload in json format.
-func respondError(w http.ResponseWriter, code int, message string) {
-	respondJSON(w, code, map[string]string{"error": message})
+func respondError(w http.ResponseWriter, statusCode int, message string) {
+	if statusCode >= 500 {
+		logger.Error("%d: %s", statusCode, message)
+	} else {
+		logger.Warning("%d: %s", statusCode, message)
+	}
+	respondJSON(w, statusCode, map[string]string{"error": message})
 }
 
 // handleStatus handles route /status.
