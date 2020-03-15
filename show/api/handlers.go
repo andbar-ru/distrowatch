@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 )
 
 // respondJSON makes response with payload in json format.
@@ -37,12 +39,28 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 
 // handleDistrs handles route /distrs.
 func handleDistrs(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	logger.Printf("%#v\n", query)
+	query := "SELECT * FROM distrs"
+
+	q := r.URL.Query()
+	orderByParams := q["orderBy"]
+	if len(orderByParams) > 0 {
+		orderByStr, err := getOrderByStr(orderByParams)
+		if err != nil {
+			message := fmt.Sprintf("Invalid query '%s': %s", r.URL.RawQuery, err.Error())
+			respondError(w, http.StatusBadRequest, message)
+			return
+		}
+		query += orderByStr
+	}
+
 	var distrs []Distr
-	err := db.Select(&distrs, "SELECT * FROM distrs")
+	err := db.Select(&distrs, query)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		if strings.Contains(err.Error(), "no such column") {
+			respondError(w, http.StatusBadRequest, err.Error())
+		} else {
+			respondError(w, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 	respondJSON(w, http.StatusOK, distrs)

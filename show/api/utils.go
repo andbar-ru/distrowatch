@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -57,4 +59,34 @@ func getDB() (*sqlx.DB, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+// getOrderStr converts request.URL.Query()["orderBy"] to string like "ORDER BY column1 ASC, column2 DESC".
+func getOrderByStr(params []string) (string, error) {
+	orderByStr := " ORDER BY"
+	colRgx := regexp.MustCompile(`^\w+$`)
+
+	for i, param := range params {
+		columns := strings.Split(param, ",")
+		for j, column := range columns {
+			parts := strings.Split(column, " ")
+			col := parts[0]
+			if !colRgx.MatchString(col) {
+				return "", fmt.Errorf("Invalid column name '%s'", col)
+			}
+			if i == 0 && j == 0 {
+				orderByStr += " `" + col + "`"
+			} else {
+				orderByStr += ", `" + col + "`"
+			}
+			if len(parts) > 1 {
+				order := strings.ToUpper(parts[1])
+				if order != "ASC" && order != "DESC" {
+					return "", fmt.Errorf("Sorting order must be 'ASC' or 'DESC', got '%s'", parts[1])
+				}
+				orderByStr += " " + order
+			}
+		}
+	}
+	return orderByStr, nil
 }
