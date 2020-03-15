@@ -45,4 +45,5 @@ type Routes []Route
 var routes = Routes{
 	Route{"Status", "GET", "/status", handleStatus},
 	Route{"Distrs", "GET", "/distrs", handleDistrs},
+	Route{"Coords", "GET", "/coords", handleCoords},
 }

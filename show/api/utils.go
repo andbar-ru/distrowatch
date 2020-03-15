@@ -15,6 +15,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var (
+	columnRgx = regexp.MustCompile(`^\w+$`)
+)
+
 func checkErr(err error) {
 	if err != nil {
 		if logger == nil {
@@ -64,14 +68,13 @@ func getDB() (*sqlx.DB, error) {
 // getOrderStr converts request.URL.Query()["orderBy"] to string like "ORDER BY column1 ASC, column2 DESC".
 func getOrderByStr(params []string) (string, error) {
 	orderByStr := " ORDER BY"
-	colRgx := regexp.MustCompile(`^\w+$`)
 
 	for i, param := range params {
 		columns := strings.Split(param, ",")
 		for j, column := range columns {
 			parts := strings.Split(column, " ")
 			col := parts[0]
-			if !colRgx.MatchString(col) {
+			if !columnRgx.MatchString(col) {
 				return "", fmt.Errorf("Invalid column name '%s'", col)
 			}
 			if i == 0 && j == 0 {
@@ -89,4 +92,21 @@ func getOrderByStr(params []string) (string, error) {
 		}
 	}
 	return orderByStr, nil
+}
+
+// getColumnsStr converts request.URL.Query().Get("columns") to string like "column1, column2".
+func getColumnsStr(columns string) (string, error) {
+	var columnsStr string
+	cols := strings.Split(columns, ",")
+	for i, col := range cols {
+		if !columnRgx.MatchString(col) {
+			return "", fmt.Errorf("Invalid column name '%s'", col)
+		}
+		if i == 0 {
+			columnsStr += "`" + col + "`"
+		} else {
+			columnsStr += ", `" + col + "`"
+		}
+	}
+	return columnsStr, nil
 }

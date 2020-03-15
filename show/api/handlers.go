@@ -4,7 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
+)
+
+var (
+	limitRgx = regexp.MustCompile(`^\d+$`)
 )
 
 // respondJSON makes response with payload in json format.
@@ -59,6 +64,7 @@ func handleDistrs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var distrs []Distr
+	logger.Debug(query)
 	err := db.Select(&distrs, query)
 	if err != nil {
 		if strings.Contains(err.Error(), "no such column") {
@@ -69,4 +75,67 @@ func handleDistrs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondJSON(w, http.StatusOK, distrs)
+}
+
+// handleCoords handles route /coords.
+func handleCoords(w http.ResponseWriter, r *http.Request) {
+	query := "SELECT "
+
+	q := r.URL.Query()
+
+	columns := q.Get("columns")
+	if columns != "" {
+		columnsStr, err := getColumnsStr(columns)
+		if err != nil {
+			message := fmt.Sprintf("Invalid query '%s': %s", r.URL.RawQuery, err.Error())
+			respondError(w, http.StatusBadRequest, message)
+			return
+		}
+		query += columnsStr
+	} else {
+		query += "*"
+	}
+	query += " FROM coords"
+
+	orderByParams := q["orderBy"]
+	if len(orderByParams) > 0 {
+		orderByStr, err := getOrderByStr(orderByParams)
+		if err != nil {
+			message := fmt.Sprintf("Invalid query '%s': %s", r.URL.RawQuery, err.Error())
+			respondError(w, http.StatusBadRequest, message)
+			return
+		}
+		query += orderByStr
+	}
+
+	limit := q.Get("limit")
+	if limit != "" {
+		if !limitRgx.MatchString(limit) {
+			respondError(w, http.StatusBadRequest, fmt.Sprintf("Invalid query '%s': limit must be number, got '%s'", r.URL.RawQuery, limit))
+			return
+		}
+		query += " LIMIT " + limit
+	}
+
+	var coords []map[string]interface{}
+	logger.Debug(query)
+	rows, err := db.Queryx(query)
+	if err != nil {
+		if strings.Contains(err.Error(), "no such column") {
+			respondError(w, http.StatusBadRequest, err.Error())
+		} else {
+			respondError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	for rows.Next() {
+		coord := make(map[string]interface{})
+		err := rows.MapScan(coord)
+		if err != nil {
+			respondError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		coords = append(coords, coord)
+	}
+	respondJSON(w, http.StatusOK, coords)
 }
