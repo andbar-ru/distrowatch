@@ -7,6 +7,10 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const (
+	apiVersion = "1.0"
+)
+
 var (
 	logger *Logger
 	config *Config

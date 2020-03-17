@@ -4,12 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
-)
-
-var (
-	limitRgx = regexp.MustCompile(`^\d+$`)
 )
 
 // respondJSON makes response with payload in json format.
@@ -43,29 +38,21 @@ func respondError(w http.ResponseWriter, statusCode int, message string) {
 
 // handleStatus handles route /status.
 func handleStatus(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{"version": "1.0"}
+	data := map[string]string{"version": apiVersion}
 	respondJSON(w, http.StatusOK, data)
 }
 
 // handleDistrs handles route /distrs.
 func handleDistrs(w http.ResponseWriter, r *http.Request) {
-	query := "SELECT * FROM distrs"
-
-	q := r.URL.Query()
-	orderByParams := q["orderBy"]
-	if len(orderByParams) > 0 {
-		orderByStr, err := getOrderByStr(orderByParams)
-		if err != nil {
-			message := fmt.Sprintf("Invalid query '%s': %s", r.URL.RawQuery, err.Error())
-			respondError(w, http.StatusBadRequest, message)
-			return
-		}
-		query += orderByStr
+	query, err := buildSQLQuery("distrs", r.URL.Query(), map[string]bool{"orderBy": true})
+	if err != nil {
+		message := fmt.Sprintf("Invalid query '%s': %s", r.URL.RawQuery, err.Error())
+		respondError(w, http.StatusBadRequest, message)
+		return
 	}
-
 	var distrs []Distr
 	logger.Debug(query)
-	err := db.Select(&distrs, query)
+	err = db.Select(&distrs, query)
 	if err != nil {
 		if strings.Contains(err.Error(), "no such column") {
 			respondError(w, http.StatusBadRequest, err.Error())
@@ -79,44 +66,12 @@ func handleDistrs(w http.ResponseWriter, r *http.Request) {
 
 // handleCoords handles route /coords.
 func handleCoords(w http.ResponseWriter, r *http.Request) {
-	query := "SELECT "
-
-	q := r.URL.Query()
-
-	columns := q.Get("columns")
-	if columns != "" {
-		columnsStr, err := getColumnsStr(columns)
-		if err != nil {
-			message := fmt.Sprintf("Invalid query '%s': %s", r.URL.RawQuery, err.Error())
-			respondError(w, http.StatusBadRequest, message)
-			return
-		}
-		query += columnsStr
-	} else {
-		query += "*"
+	query, err := buildSQLQuery("coords", r.URL.Query(), allDBQueryParams)
+	if err != nil {
+		message := fmt.Sprintf("Invalid query '%s': %s", r.URL.RawQuery, err.Error())
+		respondError(w, http.StatusBadRequest, message)
+		return
 	}
-	query += " FROM coords"
-
-	orderByParams := q["orderBy"]
-	if len(orderByParams) > 0 {
-		orderByStr, err := getOrderByStr(orderByParams)
-		if err != nil {
-			message := fmt.Sprintf("Invalid query '%s': %s", r.URL.RawQuery, err.Error())
-			respondError(w, http.StatusBadRequest, message)
-			return
-		}
-		query += orderByStr
-	}
-
-	limit := q.Get("limit")
-	if limit != "" {
-		if !limitRgx.MatchString(limit) {
-			respondError(w, http.StatusBadRequest, fmt.Sprintf("Invalid query '%s': limit must be number, got '%s'", r.URL.RawQuery, limit))
-			return
-		}
-		query += " LIMIT " + limit
-	}
-
 	var coords []map[string]interface{}
 	logger.Debug(query)
 	rows, err := db.Queryx(query)
