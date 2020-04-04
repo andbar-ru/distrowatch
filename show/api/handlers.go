@@ -3,8 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"image"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path"
 	"strings"
+	"time"
+
+	"github.com/andbar-ru/average_color"
+	"github.com/andbar-ru/distrowatch"
 )
 
 // respondJSON makes response with payload in json format.
@@ -93,4 +101,55 @@ func handleCoords(w http.ResponseWriter, r *http.Request) {
 		coords = append(coords, coord)
 	}
 	respondJSON(w, http.StatusOK, coords)
+}
+
+// handleAverageColor handles route /average-colors.
+// Sends average color of the last image in config.ImagesDir.
+func handleAverageColor(w http.ResponseWriter, r *http.Request) {
+	imagesDir := getPath(config.ImagesDir)
+	files, err := ioutil.ReadDir(imagesDir)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	// Find the last image.
+	var lastImage string
+	var lastModTime time.Time
+	for _, file := range files {
+		ext := strings.ToLower(path.Ext(file.Name()))
+		// interested only in images
+		if ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".gif" {
+			continue
+		}
+		modTime := file.ModTime()
+		if modTime.After(lastModTime) {
+			lastModTime = modTime
+			lastImage = path.Join(distrowatch.DistrsDir, file.Name())
+		}
+	}
+	if lastImage == "" {
+		respondError(w, http.StatusInternalServerError, fmt.Sprintf("could not find images in directory %s", imagesDir))
+		return
+	}
+	f, err := os.Open(lastImage)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer closeCheck(f)
+	img, _, err := image.Decode(f)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	averageColor := average_color.AverageColor(img)
+
+	var averageColorStr string
+	if averageColor.A == 0xff {
+		averageColorStr = fmt.Sprintf("#%02x%02x%02x", averageColor.R, averageColor.G, averageColor.B)
+	} else {
+		averageColorStr = fmt.Sprintf("#%02x%02x%02x%02x", averageColor.R, averageColor.G, averageColor.B, averageColor.A)
+	}
+
+	respondJSON(w, http.StatusOK, averageColorStr)
 }
