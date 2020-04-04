@@ -7,10 +7,10 @@ import (
 
 // Config stores app configuration.
 type Config struct {
-	Port         int        `json:"port"`
-	DatabasePath string     `json:"databasePath"`
-	LogConfig    *LogConfig `json:"log"`
-	ImagesDir    string     `json:"imagesDir"`
+	ListenAddress string     `json:"listenAddress"`
+	DatabasePath  string     `json:"databasePath"`
+	LogConfig     *LogConfig `json:"log"`
+	ImagesDir     string     `json:"imagesDir"`
 }
 
 // LogConfig stores log configuration.

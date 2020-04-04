@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/handlers"
@@ -26,8 +25,8 @@ func main() {
 	checkErr(err)
 	defer closeCheck(db)
 	router := NewRouter()
-	hostPort := fmt.Sprintf("localhost:%d", config.Port)
-	logger.Printf("Starting service on %s\n", hostPort)
+	listenAddress := config.ListenAddress
+	logger.Printf("Starting service on %s\n", listenAddress)
 
-	logger.Fatal(http.ListenAndServe(hostPort, handlers.CORS()(router)))
+	logger.Fatal(http.ListenAndServe(listenAddress, handlers.CORS()(router)))
 }
