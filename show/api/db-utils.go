@@ -39,7 +39,7 @@ func getDB() (*sqlx.DB, error) {
 	return db, nil
 }
 
-// getOrderStr converts request.URL.Query()["orderBy"] to string like "ORDER BY column1 ASC, column2 DESC".
+// getOrderByStr converts request.URL.Query()["orderBy"] to string like "ORDER BY column1 ASC, column2 DESC".
 func getOrderByStr(params []string) (string, error) {
 	orderByStr := " ORDER BY"
 
