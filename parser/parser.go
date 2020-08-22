@@ -50,6 +50,11 @@ func check(err error) {
 	}
 }
 
+func closeCheck(c io.Closer) {
+	err := c.Close()
+	check(err)
+}
+
 func checkResponse(response *http.Response) {
 	if response.StatusCode != 200 {
 		log.Fatalf("Status code error: %d %s", response.StatusCode, response.Status)
@@ -68,7 +73,7 @@ func getResponse(url string) *http.Response {
 func getOutcome() Outcome {
 	// Get main page
 	response := getResponse(baseURL)
-	defer response.Body.Close()
+	defer closeCheck(response.Body)
 	checkResponse(response)
 
 	// Parse the page and fetch first distribution, hits per day of which didn't change since yesterday.
@@ -212,7 +217,7 @@ func updateDb(db *sql.DB, outcome Outcome) {
 func downloadScreenshot(distrURL string) string {
 	// Get distr page
 	response := getResponse(distrURL)
-	defer response.Body.Close()
+	defer closeCheck(response.Body)
 	checkResponse(response)
 
 	// Parse the page and fetch full url of screenshot.
@@ -238,10 +243,10 @@ func downloadScreenshot(distrURL string) string {
 	if err != nil {
 		log.Fatalf("Could not create file %s, err: %s", screenshotPath, err)
 	}
-	defer output.Close()
+	defer closeCheck(output)
 
 	response = getResponse(url)
-	defer response.Body.Close()
+	defer closeCheck(response.Body)
 	checkResponse(response)
 
 	_, err = io.Copy(output, response.Body)
@@ -263,7 +268,7 @@ func main() {
 	// Open database and create tables if they don't exist.
 	db, err := distrowatch.GetDB()
 	check(err)
-	defer db.Close()
+	defer closeCheck(db)
 	var answer string
 	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='distrs'").Scan(&answer)
 	if err != nil {
