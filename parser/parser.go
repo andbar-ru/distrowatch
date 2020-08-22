@@ -37,6 +37,7 @@ var (
 type Outcome struct {
 	distrName  string
 	distrURL   string
+	hpd        int
 	next1HPD   int
 	next1Trend int
 	next2HPD   int
@@ -125,6 +126,9 @@ func getOutcome() Outcome {
 
 		if alt == "=" {
 			equalFound = true
+			hpd, err := strconv.Atoi(hpdTd.Text())
+			check(err)
+			outcome.hpd = hpd
 
 			distributionTd := hpdTd.Prev()
 			if !distributionTd.HasClass("phr2") {
@@ -154,13 +158,15 @@ func getOutcome() Outcome {
 	return outcome
 }
 
-// Update or insert count of distribution name in database.
+// updateDb updates or inserts count of distribution name in database.
 func updateDb(db *sql.DB, outcome Outcome) {
 	tx, err := db.Begin()
 	check(err)
 	_, err = tx.Exec("INSERT OR IGNORE INTO distrs (name, count, last_update) VALUES (?, 0, ?)", outcome.distrName, todayYYMMDD)
 	check(err)
 	_, err = tx.Exec("UPDATE distrs SET count = count + 1, last_update = ? WHERE name = ?", todayYYMMDD, outcome.distrName)
+	check(err)
+	_, err = tx.Exec("INSERT INTO distrs_daily (date, name, hpd) VALUES (?, ?, ?)", todayYYMMDD, outcome.distrName, outcome.hpd)
 	check(err)
 
 	// Move distrs that have been updated over year ago to the table `dropout`.
@@ -281,6 +287,15 @@ func main() {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			_, err = db.Exec("CREATE TABLE 'dropout' (`name` TEXT NOT NULL, `count` INTEGER NOT NULL, `last_update` INTEGER NOT NULL UNIQUE, `drop_date` INTEGER NOT NULL, PRIMARY KEY(`last_update`))")
+			check(err)
+		} else {
+			log.Fatal(err)
+		}
+	}
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='distrs_daily'").Scan(&answer)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			_, err = db.Exec("CREATE TABLE 'distrs_daily' (`date` INTEGER NOT NULL UNIQUE, `name` TEXT NOT NULL, `hpd` INTEGER NOT NULL, PRIMARY KEY(`date`))")
 			check(err)
 		} else {
 			log.Fatal(err)
