@@ -53,7 +53,10 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 // handleDistrs handles route /distrs.
 func handleDistrs(w http.ResponseWriter, r *http.Request) {
 	var query string
-	if r.URL.Query().Get("dropout") == "true" {
+	// Parameters "dropout" and "last365" are mutually exclusive.
+	if r.URL.Query().Get("last365") == "true" {
+		query = "SELECT name, count(name) as count, MAX(date) as last_update FROM (SELECT * FROM distrs_daily ORDER BY date DESC LIMIT 365) GROUP BY name"
+	} else if r.URL.Query().Get("dropout") == "true" {
 		query = "SELECT name, SUM(count) AS count, MAX(last_update) AS last_update FROM (SELECT name, count, last_update FROM distrs UNION ALL SELECT name, count, last_update FROM dropout) GROUP BY name"
 	} else {
 		query = "SELECT name, count, last_update FROM distrs"
